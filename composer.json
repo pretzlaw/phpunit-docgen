@@ -1,0 +1,10 @@
+{
+  "name": "pretzlaw/phpunit-docgen",
+  "description": "Generate test evidence or documentation by using doc comments.",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Pretzlaw\\PHPUnit\\DocGen\\": "lib/Pretzlaw/PHPUnit/DocGen"
+    }
+  }
+}
