@@ -161,6 +161,8 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 		// TODO: Implement addSkippedTest() method.
 	}
 
+	protected $handledMethods = [];
+
 	/**
 	 * A test suite started.
 	 *
@@ -203,6 +205,11 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	protected function appendDoc( $namespace, $docBlock ) {
 		$node = $this->document->findNearestNode( $namespace );
 
+		if ($node->getNamespace() == $namespace) {
+			// Seems like the current context was already handled so we better refuse to add duplicates.
+			return;
+		}
+
 		// maybe heading does already exist.
 		if ($node->findHeading($docBlock->getSummary())) {
 			$node = $node->findHeading($docBlock->getSummary());
@@ -241,6 +248,13 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 		}
 
 		/* @var \PHPUnit_Framework_TestCase $test */
+
+		if (isset($this->handledMethods[$this->getDocNamespace($test)])) {
+			// Seems like a test with data provider so we won't parse it more than once.
+			return;
+		}
+
+		$this->handledMethods[$test->getName(false)] = true;
 
 		$reflectMethod = new \ReflectionMethod( get_class( $test ), $test->getName(false) );
 
