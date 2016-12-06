@@ -242,7 +242,7 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 
 		/* @var \PHPUnit_Framework_TestCase $test */
 
-		$reflectMethod = new \ReflectionMethod( get_class( $test ), $test->getName() );
+		$reflectMethod = new \ReflectionMethod( get_class( $test ), $test->getName(false) );
 
 		if ( ! $reflectMethod->getDocComment() ) {
 			// When this one has no comment, then it shall not be parsed.
@@ -265,7 +265,7 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	 * @return string
 	 */
 	protected function getDocNamespace( \PHPUnit_Framework_TestCase $test ) {
-		return get_class( $test ) . '\\' . preg_replace( '@^test@', '', $test->getName() );
+		return get_class( $test ) . '\\' . preg_replace( '@^test@', '', $test->getName(false) );
 	}
 
 	/**
