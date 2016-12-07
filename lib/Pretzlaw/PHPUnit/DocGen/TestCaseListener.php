@@ -279,12 +279,18 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	}
 
 	/**
+	 * Generate namespace.
+	 *
+	 * Chops off beginning "test" from methods
+	 * and trailing "Test" from class names.
+	 *
 	 * @param \PHPUnit_Framework_TestCase $test
 	 *
 	 * @return string
 	 */
 	protected function getDocNamespace( \PHPUnit_Framework_TestCase $test ) {
-		return get_class( $test ) . '\\' . preg_replace( '@^test@', '', $test->getName(false) );
+		return preg_replace( '@Test$@', '', get_class( $test ) )
+			. '\\' . preg_replace( '@^test@', '', $test->getName(false) );
 	}
 
 	/**
