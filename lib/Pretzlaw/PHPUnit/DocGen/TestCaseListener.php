@@ -75,7 +75,7 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	 * Flush buffer and close output.
 	 */
 	public function flush() {
-		echo $this->printDocument( $this->document );
+		$this->write( $this->printDocument( $this->document ) );
 
 		parent::flush();
 	}
