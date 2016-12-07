@@ -256,7 +256,12 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 
 		$this->handledMethods[$test->getName(false)] = true;
 
-		$reflectMethod = new \ReflectionMethod( get_class( $test ), $test->getName(false) );
+		try {
+			$reflectMethod = new \ReflectionMethod( get_class( $test ), $test->getName(false) );
+		} catch (\ReflectionException $e) {
+			// Not a method or not accessible, so we skip it.
+			return;
+		}
 
 		if ( ! $reflectMethod->getDocComment() ) {
 			// When this one has no comment, then it shall not be parsed.
