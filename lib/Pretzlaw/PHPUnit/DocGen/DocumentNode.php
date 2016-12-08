@@ -79,6 +79,10 @@ class DocumentNode {
 		return NULL;
 	}
 
+	public function getParent() {
+		return $this->parent;
+	}
+
 	/**
 	 * @return DocumentNode[]
 	 */
@@ -101,6 +105,30 @@ class DocumentNode {
 		}
 
 		return $node;
+	}
+
+	public function setHeading( $heading ) {
+		$this->heading = $heading;
+	}
+
+	public function fetchNode( $namespace ) {
+		$currentNamespace = '';
+		$currentNode      = $this;
+		foreach ( explode( '\\', $namespace ) as $item ) {
+
+			$currentNamespace .= '\\' . $item;
+			$currentNamespace = ltrim( $currentNamespace, '\\' );
+
+			if ( ! $currentNode->getChild( $currentNamespace ) ) {
+				// Not found, so an intermediate node is created.
+				// Necessary if an intermediate class or method will be checked at a later moment.
+				$currentNode->createChild( $currentNamespace, null );
+			}
+
+			$currentNode = $currentNode->getChild( $currentNamespace );
+		}
+
+		return $currentNode;
 	}
 
 	/**
@@ -160,7 +188,7 @@ class DocumentNode {
 			return 1;
 		}
 
-		return $this->parent->getLevel() + 1;
+		return $this->parent->getLevel() + intval( (bool) trim ( $this->getHeading() ) );
 	}
 
 	public function getRoot() {

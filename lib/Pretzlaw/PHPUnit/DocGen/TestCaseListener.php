@@ -186,6 +186,7 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 			return;
 		}
 
+		/** @var DocBlock $docBlock */
 		$docBlock = $this->docBlockParser->create( $reflection->getDocComment() );
 
 		if ( $docBlock->hasTag( 'internal' ) ) {
@@ -193,7 +194,7 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 			return;
 		}
 
-		$this->appendDoc( $suite->getName(), $docBlock );
+		$this->appendDoc($suite->getName(), $docBlock);
 	}
 
 	/**
@@ -203,20 +204,23 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	 * @param DocBlock $docBlock
 	 */
 	protected function appendDoc( $namespace, $docBlock ) {
-		$node = $this->document->findNearestNode( $namespace );
+		$node = $this->document->fetchNode( $namespace );
 
-		if ($node->getNamespace() == $namespace) {
-			// Seems like the current context was already handled so we better refuse to add duplicates.
-			return;
+		// Check for sibling with same heading, which should be extended instead.
+		$matchingSibling = null;
+		if ($node->getParent() && trim($docBlock->getSummary())) {
+			// Use sibling with same non-empty heading.
+			$matchingSibling = $node->getParent()->findHeading($docBlock->getSummary());
 		}
 
-		// maybe heading does already exist.
-		if ($node->findHeading($docBlock->getSummary())) {
-			$node = $node->findHeading($docBlock->getSummary());
+		if ($matchingSibling) {
+			// Found sibling with same heading, which will be used instead of creating a duplicate.
+			$node = $matchingSibling;
 		}
 
-		if ( $node->getNamespace() != $namespace && $node->getHeading() != $docBlock->getSummary()) {
-			$node = $node->createChild( $namespace, $docBlock->getSummary() );
+		if (!$node->getHeading()) {
+			// Is a new node so we fill the heading.
+			$node->setHeading($docBlock->getSummary());
 		}
 
 		if ( ! $docBlock->getDescription() ) {
