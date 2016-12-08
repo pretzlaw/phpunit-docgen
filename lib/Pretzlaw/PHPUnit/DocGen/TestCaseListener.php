@@ -194,7 +194,7 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 			return;
 		}
 
-		$this->appendDoc($suite->getName(), $docBlock);
+		$this->appendDoc(preg_replace('@Test$@', '', $suite->getName()), $docBlock);
 	}
 
 	/**
