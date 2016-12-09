@@ -258,7 +258,7 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 			return;
 		}
 
-		$this->handledMethods[$test->getName(false)] = true;
+		$this->handledMethods[$this->getDocNamespace($test)] = true;
 
 		try {
 			$reflectMethod = new \ReflectionMethod( get_class( $test ), $test->getName(false) );
