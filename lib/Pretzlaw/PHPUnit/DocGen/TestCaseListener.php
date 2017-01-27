@@ -19,7 +19,9 @@
 
 namespace Pretzlaw\PHPUnit\DocGen;
 
+use Dompdf\Dompdf;
 use Exception;
+use Michelf\MarkdownExtra;
 use phpDocumentor\Reflection\DocBlock;
 use phpDocumentor\Reflection\DocBlockFactory;
 use PHPUnit_Framework_AssertionFailedError;
@@ -75,7 +77,28 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	 * Flush buffer and close output.
 	 */
 	public function flush() {
-		$this->write( $this->printDocument( $this->document ) );
+        // Determine file type by extension.
+        $fileType = strtolower( substr( $this->outTarget, strrpos( $this->outTarget, '.' ) + 1 ) );
+
+        $content = '';
+        switch ( $fileType ) {
+            case 'md':
+                $content = $this->printDocument( $this->document );
+                break;
+            case 'pdf':
+                $markdownParser = new MarkdownExtra();
+                $html = $markdownParser->transform( $this->printDocument( $this->document ) );
+
+                $domPdf = new Dompdf();
+                $domPdf->loadHtml($html);
+                $domPdf->render();
+                $content = $domPdf->output();
+                break;
+            default:
+                throw new \InvalidArgumentException( 'Unknown file type. Not implemented: ' . $fileType );
+        }
+
+        $this->write( $content );
 
 		parent::flush();
 	}
