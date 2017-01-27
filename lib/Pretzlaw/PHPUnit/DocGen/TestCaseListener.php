@@ -89,14 +89,16 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 		$text = '';
 
 		if ( $document->getHeading() ) {
-			$text = PHP_EOL . str_repeat( '#', $document->getLevel() ) . ' ' . $document->getHeading()
-			        . PHP_EOL . PHP_EOL;
+			$text = PHP_EOL . PHP_EOL . str_repeat( '#', $document->getLevel() ) . ' ' . $document->getHeading();
 		}
 
-		$text .= trim( $document->getContent() );
+		$content = trim( $document->getContent() );
+		if ( $content ) {
+			$text .= PHP_EOL . PHP_EOL . $content;
+		}
 
 		foreach ( $document->getChildren() as $child ) {
-			$text .= rtrim( $this->printDocument( $child ) ) . PHP_EOL . PHP_EOL;
+			$text .= $this->printDocument( $child );
 		}
 
 		return $text;
