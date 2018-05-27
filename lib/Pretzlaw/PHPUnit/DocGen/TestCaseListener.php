@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestListener;
 use PHPUnit\Framework\TestSuite;
 use PHPUnit\Framework\Warning;
 use PHPUnit\Util\Printer;
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\Finder\SplFileInfo;
 
 /**
  * Listen to test cases and generate document.
@@ -59,18 +61,29 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @var DocBlockFactory
 	 */
 	protected $docBlockParser;
+	protected $handledMethods = [];
+	/**
+	 * @var string
+	 */
+	private $imagesBaseDir;
 
 	/**
 	 * TestCaseListener constructor.
 	 *
 	 * @param $out
 	 *
-	 * @throws \PHPUnit\Framework\Exception
+	 * @param null $title
+	 * @param string $imagesBaseDir
 	 */
-	public function __construct( $out ) {
-		$this->document = new DocumentNode( '\\', 'Documentation' );
+	public function __construct( $out, $title = null, $imagesBaseDir = 'var/phpunit/tests' ) {
+		if ( null === $title ) {
+			$title = 'Documentation';
+		}
+
+		$this->document = new DocumentNode( '\\', $title );
 
 		$this->docBlockParser = DocBlockFactory::createInstance();
+		$this->imagesBaseDir  = $imagesBaseDir;
 
 		parent::__construct( $out );
 	}
@@ -80,27 +93,27 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @throws \InvalidArgumentException
 	 */
 	public function flush() {
-        // Determine file type by extension.
-        $fileType = strtolower( substr( $this->outTarget, strrpos( $this->outTarget, '.' ) + 1 ) );
+		// Determine file type by extension.
+		$fileType = strtolower( substr( $this->outTarget, strrpos( $this->outTarget, '.' ) + 1 ) );
 
-        switch ( $fileType ) {
-            case 'md':
-                $content = $this->printDocument( $this->document );
-                break;
-            case 'pdf':
-                $markdownParser = new MarkdownExtra();
-                $html = $markdownParser->transform( $this->printDocument( $this->document ) );
+		switch ( $fileType ) {
+			case 'md':
+				$content = $this->printDocument( $this->document );
+				break;
+			case 'pdf':
+				$markdownParser = new MarkdownExtra();
+				$html           = $markdownParser->transform( $this->printDocument( $this->document ) );
 
-                $domPdf = new Dompdf();
-                $domPdf->loadHtml($html);
-                $domPdf->render();
-                $content = $domPdf->output();
-                break;
-            default:
-                throw new \InvalidArgumentException( 'Unknown file type. Not implemented: ' . $fileType );
-        }
+				$domPdf = new Dompdf();
+				$domPdf->loadHtml( $html );
+				$domPdf->render();
+				$content = $domPdf->output();
+				break;
+			default:
+				throw new \InvalidArgumentException( 'Unknown file type. Not implemented: ' . $fileType );
+		}
 
-        $this->write( $content );
+		$this->write( $content );
 
 		parent::flush();
 	}
@@ -133,8 +146,8 @@ class TestCaseListener extends Printer implements TestListener {
 	 * An error occurred.
 	 *
 	 * @param Test $test
-	 * @param Exception              $e
-	 * @param float                  $time
+	 * @param Exception $e
+	 * @param float $time
 	 */
 	public function addError( Test $test, Exception $e, $time ) {
 		// TODO: Implement addError() method.
@@ -155,8 +168,8 @@ class TestCaseListener extends Printer implements TestListener {
 	 * Incomplete test.
 	 *
 	 * @param Test $test
-	 * @param Exception              $e
-	 * @param float                  $time
+	 * @param Exception $e
+	 * @param float $time
 	 */
 	public function addIncompleteTest( Test $test, Exception $e, $time ) {
 		// TODO: Implement addIncompleteTest() method.
@@ -166,8 +179,8 @@ class TestCaseListener extends Printer implements TestListener {
 	 * Risky test.
 	 *
 	 * @param Test $test
-	 * @param Exception              $e
-	 * @param float                  $time
+	 * @param Exception $e
+	 * @param float $time
 	 *
 	 * @since Method available since Release 4.0.0
 	 */
@@ -179,16 +192,14 @@ class TestCaseListener extends Printer implements TestListener {
 	 * Skipped test.
 	 *
 	 * @param Test $test
-	 * @param Exception              $e
-	 * @param float                  $time
+	 * @param Exception $e
+	 * @param float $time
 	 *
 	 * @since Method available since Release 3.0.0
 	 */
 	public function addSkippedTest( Test $test, Exception $e, $time ) {
 		// TODO: Implement addSkippedTest() method.
 	}
-
-	protected $handledMethods = [];
 
 	/**
 	 * A test suite started.
@@ -223,7 +234,7 @@ class TestCaseListener extends Printer implements TestListener {
 			return;
 		}
 
-		$this->appendDoc(preg_replace('@Test$@', '', $suite->getName()), $docBlock);
+		$this->appendDoc( preg_replace( '@Test$@', '', $suite->getName() ), $docBlock );
 	}
 
 	/**
@@ -243,26 +254,69 @@ class TestCaseListener extends Printer implements TestListener {
 
 		// Check for sibling with same heading, which should be extended instead.
 		$matchingSibling = null;
-		if ($node->getParent() && trim($docBlock->getSummary())) {
+		if ( $node->getParent() && trim( $docBlock->getSummary() ) ) {
 			// Use sibling with same non-empty heading.
-			$matchingSibling = $node->getParent()->findHeading($docBlock->getSummary());
+			$matchingSibling = $node->getParent()->findHeading( $docBlock->getSummary() );
 		}
 
-		if ($matchingSibling) {
+		if ( $matchingSibling ) {
 			// Found sibling with same heading, which will be used instead of creating a duplicate.
 			$node = $matchingSibling;
 		}
 
-		if (!$node->getHeading()) {
+		if ( ! $node->getHeading() ) {
 			// Is a new node so we fill the heading.
-			$node->setHeading($docBlock->getSummary());
+			$node->setHeading( $docBlock->getSummary() );
 		}
 
 		if ( ! $docBlock->getDescription() ) {
 			return;
 		}
 
-		$node->addContent( trim( $docBlock->getDescription() ) );
+		$description = trim( $docBlock->getDescription() );
+		if ( $description && false === \strpos( $node->getContent(), $description ) ) {
+			$node->addContent( $description );
+		}
+
+		$this->appendDocImages( $namespace, $node );
+	}
+
+	private function appendDocImages( $namespace, DocumentNode $node ) {
+		$path = $this->imagesBaseDir . '/' . $this->getTestPath( $namespace );
+
+		if ( ! \is_dir( $path ) ) {
+			return;
+		}
+
+		$finder  = new Finder();
+		$subDir  = trim( \str_replace( \dirname( $this->outTarget ), '', $path ), '/' );
+		$pattern = '@' . \preg_quote( $subDir, '@' ) . '@';
+		$finder->in( \dirname( $this->outTarget ) )
+		       ->path( $pattern )
+		       ->name( '*.png' )
+		       // ->depth( 1 )
+		       ->sortByName();
+
+		foreach ( $finder->files() as $imagePath ) {
+			/** @var SplFileInfo $imagePath */
+			$basename = $imagePath->getBasename( '.png' );
+
+			$content = '![' . $basename . '](' . $imagePath->getRelativePathname() . ')';
+			if ( false !== \strpos( $node->getContent(), $content ) ) {
+				continue;
+			}
+
+			$node->addContent( $content );
+		}
+	}
+
+	/**
+	 * @param string $name
+	 *
+	 * @return string
+	 */
+	protected function getTestPath( string $name ): string {
+		return \str_replace( [ '\\', '::' ], '/', $name ) . '/';
 	}
 
 	/**
@@ -290,16 +344,16 @@ class TestCaseListener extends Printer implements TestListener {
 
 		/* @var TestCase $test */
 
-		if (isset($this->handledMethods[$this->getDocNamespace($test)])) {
+		if ( isset( $this->handledMethods[ $this->getDocNamespace( $test ) ] ) ) {
 			// Seems like a test with data provider so we won't parse it more than once.
 			return;
 		}
 
-		$this->handledMethods[$this->getDocNamespace($test)] = true;
+		$this->handledMethods[ $this->getDocNamespace( $test ) ] = true;
 
 		try {
-			$reflectMethod = new \ReflectionMethod( \get_class( $test ), $test->getName(false) );
-		} catch (\ReflectionException $e) {
+			$reflectMethod = new \ReflectionMethod( \get_class( $test ), $test->getName( false ) );
+		} catch ( \ReflectionException $e ) {
 			// Not a method or not accessible, so we skip it.
 			return;
 		}
@@ -331,14 +385,14 @@ class TestCaseListener extends Printer implements TestListener {
 	 */
 	protected function getDocNamespace( TestCase $test ) {
 		return preg_replace( '@Test$@', '', \get_class( $test ) )
-			. '\\' . preg_replace( '@^test@', '', $test->getName(false) );
+		       . '\\' . preg_replace( '@^test@', '', $test->getName( false ) );
 	}
 
 	/**
 	 * A test ended.
 	 *
 	 * @param Test $test
-	 * @param float                  $time
+	 * @param float $time
 	 */
 	public function endTest( Test $test, $time ) {
 
