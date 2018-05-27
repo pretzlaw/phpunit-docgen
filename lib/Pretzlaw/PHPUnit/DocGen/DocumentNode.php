@@ -45,14 +45,14 @@ class DocumentNode {
 	/**
 	 * @var DocumentNode[]
 	 */
-	protected $children = [ ];
+	protected $children = [];
 	/**
 	 * @var DocumentNode
 	 */
 	protected $parent;
 	protected $namespace;
 
-	public function __construct( $namespace, $heading, DocumentNode $parent = NULL ) {
+	public function __construct( $namespace, $heading, DocumentNode $parent = null ) {
 		$this->namespace = $namespace;
 		$this->heading   = $heading;
 		$this->parent    = $parent;
@@ -76,11 +76,7 @@ class DocumentNode {
 			}
 		}
 
-		return NULL;
-	}
-
-	public function getParent() {
-		return $this->parent;
+		return null;
 	}
 
 	/**
@@ -97,38 +93,26 @@ class DocumentNode {
 		return $this->heading;
 	}
 
-	public function findNode( $namespace ) {
-		$node = $this->findNearestNode( $namespace );
-
-		if ( $node->getNamespace() != $namespace ) {
-			return NULL;
-		}
-
-		return $node;
-	}
-
 	public function setHeading( $heading ) {
 		$this->heading = $heading;
 	}
 
-	public function fetchNode( $namespace ) {
-		$currentNamespace = '';
-		$currentNode      = $this;
-		foreach ( explode( '\\', $namespace ) as $item ) {
+	public function getParent() {
+		return $this->parent;
+	}
 
-			$currentNamespace .= '\\' . $item;
-			$currentNamespace = ltrim( $currentNamespace, '\\' );
+	public function findNode( $namespace ) {
+		$node = $this->findNearestNode( $namespace );
 
-			if ( ! $currentNode->getChild( $currentNamespace ) ) {
-				// Not found, so an intermediate node is created.
-				// Necessary if an intermediate class or method will be checked at a later moment.
-				$currentNode->createChild( $currentNamespace, null );
-			}
-
-			$currentNode = $currentNode->getChild( $currentNamespace );
+		if ( null === $node ) {
+			throw new \RuntimeException( 'Could not find node for namespace ' . $namespace );
 		}
 
-		return $currentNode;
+		if ( $node->getNamespace() != $namespace ) {
+			return null;
+		}
+
+		return $node;
 	}
 
 	/**
@@ -157,7 +141,7 @@ class DocumentNode {
 
 	public function getChild( $namespace ) {
 		if ( ! isset( $this->children[ $namespace ] ) ) {
-			return NULL;
+			return null;
 		}
 
 		return $this->children[ $namespace ];
@@ -165,6 +149,31 @@ class DocumentNode {
 
 	public function getNamespace() {
 		return $this->namespace;
+	}
+
+	/**
+	 * @param $namespace
+	 *
+	 * @return null|DocumentNode
+	 */
+	public function fetchNode( $namespace ) {
+		$currentNamespace = '';
+		$currentNode      = $this;
+		foreach ( explode( '\\', $namespace ) as $item ) {
+
+			$currentNamespace .= '\\' . $item;
+			$currentNamespace = ltrim( $currentNamespace, '\\' );
+
+			if ( ! $currentNode->getChild( $currentNamespace ) ) {
+				// Not found, so an intermediate node is created.
+				// Necessary if an intermediate class or method will be checked at a later moment.
+				$currentNode->createChild( $currentNamespace, null );
+			}
+
+			$currentNode = $currentNode->getChild( $currentNamespace );
+		}
+
+		return $currentNode;
 	}
 
 	public function createChild( $namespace, $heading ) {
@@ -184,15 +193,15 @@ class DocumentNode {
 	}
 
 	public function getLevel() {
-		if ( NULL == $this->parent ) {
+		if ( null == $this->parent ) {
 			return 1;
 		}
 
-		return $this->parent->getLevel() + intval( (bool) trim ( $this->getHeading() ) );
+		return $this->parent->getLevel() + ( (int) (bool) trim( $this->getHeading() ) );
 	}
 
 	public function getRoot() {
-		if ( NULL == $this->parent ) {
+		if ( null == $this->parent ) {
 			return $this;
 		}
 

@@ -24,10 +24,13 @@ use Exception;
 use Michelf\MarkdownExtra;
 use phpDocumentor\Reflection\DocBlock;
 use phpDocumentor\Reflection\DocBlockFactory;
-use PHPUnit_Framework_AssertionFailedError;
-use PHPUnit_Framework_Test;
-use PHPUnit_Framework_TestSuite;
-use Prophecy\Doubler\ClassPatch\ReflectionClassNewInstancePatch;
+use PHPUnit\Framework\AssertionFailedError;
+use PHPUnit\Framework\Test;
+use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\TestListener;
+use PHPUnit\Framework\TestSuite;
+use PHPUnit\Framework\Warning;
+use PHPUnit\Util\Printer;
 
 /**
  * Listen to test cases and generate document.
@@ -42,7 +45,7 @@ use Prophecy\Doubler\ClassPatch\ReflectionClassNewInstancePatch;
  * @see       \PHPUnit_Framework_TestListener
  * @since     1.0.0
  */
-class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framework_TestListener {
+class TestCaseListener extends Printer implements TestListener {
 	/**
 	 * Gather document.
 	 *
@@ -56,15 +59,14 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	 * @var DocBlockFactory
 	 */
 	protected $docBlockParser;
-	/**
-	 * @var string[]
-	 */
-	private $current;
-	/**
-	 * @var \DOMElement
-	 */
-	private $root;
 
+	/**
+	 * TestCaseListener constructor.
+	 *
+	 * @param $out
+	 *
+	 * @throws \PHPUnit\Framework\Exception
+	 */
 	public function __construct( $out ) {
 		$this->document = new DocumentNode( '\\', 'Documentation' );
 
@@ -75,12 +77,12 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 
 	/**
 	 * Flush buffer and close output.
+	 * @throws \InvalidArgumentException
 	 */
 	public function flush() {
         // Determine file type by extension.
         $fileType = strtolower( substr( $this->outTarget, strrpos( $this->outTarget, '.' ) + 1 ) );
 
-        $content = '';
         switch ( $fileType ) {
             case 'md':
                 $content = $this->printDocument( $this->document );
@@ -130,59 +132,59 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	/**
 	 * An error occurred.
 	 *
-	 * @param PHPUnit_Framework_Test $test
+	 * @param Test $test
 	 * @param Exception              $e
 	 * @param float                  $time
 	 */
-	public function addError( PHPUnit_Framework_Test $test, Exception $e, $time ) {
+	public function addError( Test $test, Exception $e, $time ) {
 		// TODO: Implement addError() method.
 	}
 
 	/**
 	 * A failure occurred.
 	 *
-	 * @param PHPUnit_Framework_Test                 $test
-	 * @param PHPUnit_Framework_AssertionFailedError $e
-	 * @param float                                  $time
+	 * @param Test $test
+	 * @param AssertionFailedError $e
+	 * @param float $time
 	 */
-	public function addFailure( PHPUnit_Framework_Test $test, PHPUnit_Framework_AssertionFailedError $e, $time ) {
+	public function addFailure( Test $test, AssertionFailedError $e, $time ) {
 		// TODO: Implement addFailure() method.
 	}
 
 	/**
 	 * Incomplete test.
 	 *
-	 * @param PHPUnit_Framework_Test $test
+	 * @param Test $test
 	 * @param Exception              $e
 	 * @param float                  $time
 	 */
-	public function addIncompleteTest( PHPUnit_Framework_Test $test, Exception $e, $time ) {
+	public function addIncompleteTest( Test $test, Exception $e, $time ) {
 		// TODO: Implement addIncompleteTest() method.
 	}
 
 	/**
 	 * Risky test.
 	 *
-	 * @param PHPUnit_Framework_Test $test
+	 * @param Test $test
 	 * @param Exception              $e
 	 * @param float                  $time
 	 *
 	 * @since Method available since Release 4.0.0
 	 */
-	public function addRiskyTest( PHPUnit_Framework_Test $test, Exception $e, $time ) {
+	public function addRiskyTest( Test $test, Exception $e, $time ) {
 		// TODO: Implement addRiskyTest() method.
 	}
 
 	/**
 	 * Skipped test.
 	 *
-	 * @param PHPUnit_Framework_Test $test
+	 * @param Test $test
 	 * @param Exception              $e
 	 * @param float                  $time
 	 *
 	 * @since Method available since Release 3.0.0
 	 */
-	public function addSkippedTest( PHPUnit_Framework_Test $test, Exception $e, $time ) {
+	public function addSkippedTest( Test $test, Exception $e, $time ) {
 		// TODO: Implement addSkippedTest() method.
 	}
 
@@ -191,11 +193,13 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	/**
 	 * A test suite started.
 	 *
-	 * @param PHPUnit_Framework_TestSuite $suite
+	 * @param TestSuite $suite
 	 *
 	 * @since Method available since Release 2.2.0
+	 * @throws \RuntimeException
+	 * @throws \ReflectionException
 	 */
-	public function startTestSuite( PHPUnit_Framework_TestSuite $suite ) {
+	public function startTestSuite( TestSuite $suite ) {
 		if ( 0 === strpos( $suite->getName(), 'PHPUnit_' ) ) {
 			return;
 		}
@@ -225,11 +229,17 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	/**
 	 * @todo This breaks when some tests depends on another.
 	 *
-	 * @param string   $namespace
+	 * @param string $namespace
 	 * @param DocBlock $docBlock
+	 *
+	 * @throws \RuntimeException
 	 */
 	protected function appendDoc( $namespace, $docBlock ) {
 		$node = $this->document->fetchNode( $namespace );
+
+		if ( null === $node ) {
+			throw new \RuntimeException( 'Could not determine new node' );
+		}
 
 		// Check for sibling with same heading, which should be extended instead.
 		$matchingSibling = null;
@@ -258,25 +268,27 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	/**
 	 * A test suite ended.
 	 *
-	 * @param PHPUnit_Framework_TestSuite $suite
+	 * @param TestSuite $suite
 	 *
 	 * @since Method available since Release 2.2.0
 	 */
-	public function endTestSuite( PHPUnit_Framework_TestSuite $suite ) {
+	public function endTestSuite( TestSuite $suite ) {
 
 	}
 
 	/**
 	 * A test started.
 	 *
-	 * @param PHPUnit_Framework_Test $test
+	 * @param Test $test
+	 *
+	 * @throws \RuntimeException
 	 */
-	public function startTest( PHPUnit_Framework_Test $test ) {
-		if ( ! $test instanceof \PHPUnit_Framework_TestCase ) {
+	public function startTest( Test $test ) {
+		if ( ! $test instanceof TestCase ) {
 			return;
 		}
 
-		/* @var \PHPUnit_Framework_TestCase $test */
+		/* @var TestCase $test */
 
 		if (isset($this->handledMethods[$this->getDocNamespace($test)])) {
 			// Seems like a test with data provider so we won't parse it more than once.
@@ -286,7 +298,7 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 		$this->handledMethods[$this->getDocNamespace($test)] = true;
 
 		try {
-			$reflectMethod = new \ReflectionMethod( get_class( $test ), $test->getName(false) );
+			$reflectMethod = new \ReflectionMethod( \get_class( $test ), $test->getName(false) );
 		} catch (\ReflectionException $e) {
 			// Not a method or not accessible, so we skip it.
 			return;
@@ -313,22 +325,33 @@ class TestCaseListener extends \PHPUnit_Util_Printer implements \PHPUnit_Framewo
 	 * Chops off beginning "test" from methods
 	 * and trailing "Test" from class names.
 	 *
-	 * @param \PHPUnit_Framework_TestCase $test
+	 * @param TestCase $test
 	 *
 	 * @return string
 	 */
-	protected function getDocNamespace( \PHPUnit_Framework_TestCase $test ) {
-		return preg_replace( '@Test$@', '', get_class( $test ) )
+	protected function getDocNamespace( TestCase $test ) {
+		return preg_replace( '@Test$@', '', \get_class( $test ) )
 			. '\\' . preg_replace( '@^test@', '', $test->getName(false) );
 	}
 
 	/**
 	 * A test ended.
 	 *
-	 * @param PHPUnit_Framework_Test $test
+	 * @param Test $test
 	 * @param float                  $time
 	 */
-	public function endTest( PHPUnit_Framework_Test $test, $time ) {
+	public function endTest( Test $test, $time ) {
+
+	}
+
+	/**
+	 * A warning occurred.
+	 *
+	 * @param Test $test
+	 * @param Warning $e
+	 * @param float $time
+	 */
+	public function addWarning( Test $test, Warning $e, $time ) {
 
 	}
 }
