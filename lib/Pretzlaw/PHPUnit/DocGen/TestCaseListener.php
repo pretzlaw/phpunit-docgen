@@ -66,6 +66,14 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @var string
 	 */
 	private $imagesBaseDir;
+	/**
+	 * @var string
+	 */
+	private $stylesheet;
+	/**
+	 * @var null|string
+	 */
+	private $title;
 
 	/**
 	 * TestCaseListener constructor.
@@ -73,9 +81,10 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @param $out
 	 *
 	 * @param null $title
+	 * @param string $stylesheet
 	 * @param string $imagesBaseDir
 	 */
-	public function __construct( $out, $title = null, $imagesBaseDir = 'var/phpunit/tests' ) {
+	public function __construct( $out, $title = null, $stylesheet = '', $imagesBaseDir = 'var/phpunit/tests' ) {
 		if ( null === $title ) {
 			$title = 'Documentation';
 		}
@@ -84,6 +93,8 @@ class TestCaseListener extends Printer implements TestListener {
 
 		$this->docBlockParser = DocBlockFactory::createInstance();
 		$this->imagesBaseDir  = $imagesBaseDir;
+		$this->stylesheet     = $stylesheet;
+		$this->title = $title;
 
 		parent::__construct( $out );
 	}
@@ -96,18 +107,16 @@ class TestCaseListener extends Printer implements TestListener {
 		// Determine file type by extension.
 		$fileType = strtolower( substr( $this->outTarget, strrpos( $this->outTarget, '.' ) + 1 ) );
 
+
 		switch ( $fileType ) {
 			case 'md':
-				$content = $this->printDocument( $this->document );
+				$content = $this->toMarkdown();
+				break;
+			case 'html':
+				$content = $this->toHtml();
 				break;
 			case 'pdf':
-				$markdownParser = new MarkdownExtra();
-				$html           = $markdownParser->transform( $this->printDocument( $this->document ) );
-
-				$domPdf = new Dompdf();
-				$domPdf->loadHtml( $html );
-				$domPdf->render();
-				$content = $domPdf->output();
+				$content = $this->toPdf();
 				break;
 			default:
 				throw new \InvalidArgumentException( 'Unknown file type. Not implemented: ' . $fileType );
@@ -116,6 +125,30 @@ class TestCaseListener extends Printer implements TestListener {
 		$this->write( $content );
 
 		parent::flush();
+	}
+
+	protected function toHtml() {
+		$markdownParser = new MarkdownExtra();
+		$content        = '<!doctype html>'
+		                  . \PHP_EOL . '<html lang="en" moznomarginboxes>'
+		                  . \PHP_EOL . '<head>'
+		                  . \PHP_EOL . '    <meta charset="UTF-8">'
+		                  . \PHP_EOL . '    <meta name="viewport"'
+		                  . \PHP_EOL . '          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">'
+		                  . \PHP_EOL . '    <meta http-equiv="X-UA-Compatible" content="ie=edge">'
+		                  . \PHP_EOL . '    <title>' . $this->title . '</title>';
+
+
+		if ( $this->stylesheet && \file_exists( $this->stylesheet ) ) {
+			$content = '<style>' . PHP_EOL . \file_get_contents( $this->stylesheet ) . \PHP_EOL . '</style>'
+			           . \PHP_EOL . \PHP_EOL . $content;
+		}
+
+		$content .= \PHP_EOL . '</head>' . \PHP_EOL . '<body>';
+		$content .= $markdownParser->transform( $this->toMarkdown() );
+		$content .= \PHP_EOL . '</body>' . \PHP_EOL . '</html>';
+
+		return $content;
 	}
 
 	/**
@@ -407,5 +440,25 @@ class TestCaseListener extends Printer implements TestListener {
 	 */
 	public function addWarning( Test $test, Warning $e, $time ) {
 
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function toPdf(): string {
+		$domPdf = new Dompdf();
+		$domPdf->loadHtml( $this->toHtml() );
+		$domPdf->setBasePath( \dirname( $this->outTarget ) );
+		$domPdf->render();
+		$content = $domPdf->output();
+
+		return $content;
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function toMarkdown(): string {
+		return $this->printDocument( $this->document );
 	}
 }
