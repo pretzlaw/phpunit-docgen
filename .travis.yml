@@ -17,22 +17,32 @@ env:
     - PHPUNIT_VERSION=6.5.*
   matrix:
     # see https://phpunit.de/supported-versions.html
-    - PHPUNIT_VERSION=6.5.*
+    # phpunit 7 until February 7, 2020
+    - PHPUNIT_VERSION=7.1.*
+    - PHPUNIT_VERSION=7.2.*
+    - PHPUNIT_VERSION=7.3.*
+    - PHPUNIT_VERSION=7.4.*
+    - PHPUNIT_VERSION=7.5.*
+    - PHPUNIT_VERSION=8.0.*
+    - PHPUNIT_VERSION=8.1.*
+    - PHPUNIT_VERSION=8.2.*
 
 matrix:
   include:
-    # additional combination among env (as above)
-    - php: '7.0'
-      env: PHPUNIT_VERSION=~5
     # Intermediate version tests due to unstable SemVer
-    - php: '7.1'
-      env: PHPUNIT_VERSION="~7" WP_VERSION=4.9
+    - php: '7.2'
+      env: PHPUNIT_VERSION="~8"
   # in the process to achieve support
-  allow_failures:
-    - php: '7.0'
-    # this one is waiting for phpunit-docgen to be compatible with phpunit 7
+  # allow_failures:
+  #  - php: 'nightly-7.4'
+  #  - php: 'nightly-8.0'
+  exclude:
     - php: '7.1'
-      env: PHPUNIT_VERSION="~7" WP_VERSION=4.9
+      env: PHPUNIT_VERSION=8.0.*
+    - php: '7.1'
+      env: PHPUNIT_VERSION=8.1.*
+    - php: '7.1'
+      env: PHPUNIT_VERSION=8.2.*
 
 services:
   - mysql

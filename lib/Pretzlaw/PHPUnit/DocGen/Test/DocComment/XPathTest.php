@@ -64,7 +64,7 @@ class XPathTest extends TestCase
      */
     private $comment;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 

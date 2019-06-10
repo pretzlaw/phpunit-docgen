@@ -103,7 +103,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 * Flush buffer and close output.
 	 * @throws \InvalidArgumentException
 	 */
-	public function flush() {
+	public function flush(): void {
 		// Determine file type by extension.
 		$fileType = strtolower( substr( $this->outTarget, strrpos( $this->outTarget, '.' ) + 1 ) );
 
@@ -182,7 +182,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @param Exception $e
 	 * @param float $time
 	 */
-	public function addError( Test $test, Exception $e, $time ) {
+	public function addError( Test $test, \Throwable $e, float $time ): void {
 		// TODO: Implement addError() method.
 	}
 
@@ -193,7 +193,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @param AssertionFailedError $e
 	 * @param float $time
 	 */
-	public function addFailure( Test $test, AssertionFailedError $e, $time ) {
+	public function addFailure(Test $test, AssertionFailedError $e, float $time): void {
 		// TODO: Implement addFailure() method.
 	}
 
@@ -204,7 +204,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @param Exception $e
 	 * @param float $time
 	 */
-	public function addIncompleteTest( Test $test, Exception $e, $time ) {
+	public function addIncompleteTest(Test $test, \Throwable $t, float $time): void {
 		// TODO: Implement addIncompleteTest() method.
 	}
 
@@ -217,7 +217,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 *
 	 * @since Method available since Release 4.0.0
 	 */
-	public function addRiskyTest( Test $test, Exception $e, $time ) {
+	public function addRiskyTest(Test $test, \Throwable $t, float $time): void {
 		// TODO: Implement addRiskyTest() method.
 	}
 
@@ -230,7 +230,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 *
 	 * @since Method available since Release 3.0.0
 	 */
-	public function addSkippedTest( Test $test, Exception $e, $time ) {
+	public function addSkippedTest(Test $test, \Throwable $t, float $time): void {
 		// TODO: Implement addSkippedTest() method.
 	}
 
@@ -243,7 +243,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @throws \RuntimeException
 	 * @throws \ReflectionException
 	 */
-	public function startTestSuite( TestSuite $suite ) {
+	public function startTestSuite(TestSuite $suite): void {
 		if ( 0 === strpos( $suite->getName(), 'PHPUnit_' ) ) {
 			return;
 		}
@@ -359,7 +359,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 *
 	 * @since Method available since Release 2.2.0
 	 */
-	public function endTestSuite( TestSuite $suite ) {
+	public function endTestSuite(TestSuite $suite): void {
 
 	}
 
@@ -370,7 +370,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 *
 	 * @throws \RuntimeException
 	 */
-	public function startTest( Test $test ) {
+	public function startTest(Test $test): void {
 		if ( ! $test instanceof TestCase ) {
 			return;
 		}
@@ -427,7 +427,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @param Test $test
 	 * @param float $time
 	 */
-	public function endTest( Test $test, $time ) {
+	public function endTest(Test $test, float $time): void {
 
 	}
 
@@ -438,7 +438,7 @@ class TestCaseListener extends Printer implements TestListener {
 	 * @param Warning $e
 	 * @param float $time
 	 */
-	public function addWarning( Test $test, Warning $e, $time ) {
+	public function addWarning(Test $test, Warning $e, float $time): void {
 
 	}
 

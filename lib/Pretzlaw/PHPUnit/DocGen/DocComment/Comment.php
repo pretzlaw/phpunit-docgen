@@ -115,6 +115,11 @@ class Comment
 
         $content = $this->xpath($xpathOrIndex, $index);
 
+        if (is_array($content) && count($content) === 1) {
+            // Seems like the only one here.
+            $content = reset($content);
+        }
+
         if (!$content || !$content instanceof SimpleXMLElement) {
             throw new \RuntimeException('Code not found or empty: ' . $xpathOrIndex);
         }

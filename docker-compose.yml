@@ -12,6 +12,16 @@ services:
       default:
         ipv4_address: 10.218.6.10
 
+  php72:
+    image: php:7.2-fpm
+    volumes:
+      - ".:/var/www/html"
+      - "$COMPOSER_LOCAL:/var/composer"
+    env_file: [ .env ]
+    networks:
+      default:
+        ipv4_address: 10.218.6.72
+
   db:
     image: mysql:5.6
     volumes:
