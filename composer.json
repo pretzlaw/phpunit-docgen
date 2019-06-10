@@ -10,6 +10,7 @@
   "require": {
     "phpunit/phpunit": "^6",
     "dompdf/dompdf": "^0.8",
-    "michelf/php-markdown": "^1.8"
+    "michelf/php-markdown": "^1.8",
+    "phpdocumentor/reflection-docblock": "~4"
   }
 }

@@ -5,7 +5,7 @@
 >
     <testsuites>
         <testsuite name="default">
-            <directory>lib/Test</directory>
+            <directory>lib/Pretzlaw/PHPUnit/DocGen/Test</directory>
         </testsuite>
     </testsuites>
 
